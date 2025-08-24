@@ -1,0 +1,180 @@
+<div class="container mx-auto px-4">
+    <div class="grid grid-cols-12 gap-4 mt-5">
+        <!-- New User Button -->
+        <div class="col-span-12 md:col-span-2 md:col-start-10 md:col-end-12 mt-3 md:mt-0">
+            <button
+                class="bg-green-500 text-white px-4 py-2 rounded-lg w-full md:w-full hover:bg-green-600 transition-colors"
+                (click)="showNewUserDialog()">
+                New User
+            </button>
+        </div>
+
+        <!-- Search Input -->
+        <div class="col-span-12 md:col-span-2 md:col-start-10 md:col-end-12 mt-3 md:mt-0">
+            <!--<input placeholder="Search..."
+                class="border w-full px-3 py-2 outline-none rounded-lg focus:ring-2 focus:ring-green-300" />-->
+        </div>
+
+        @if(loading()){
+        <p-progressSpinner *ngIf="loading()"></p-progressSpinner>
+        }
+
+        <!-- Table Placeholder -->
+        <div class="col-span-12 md:col-span-12 md:col-start-1 md:col-end-13 mt-4">
+            <div class="bg-gray-100 p-4 rounded-lg text-center">
+
+                @defer(when users()){
+                <p-table [value]="users()" [tableStyle]="{ 'min-width': '50rem' }" #dt2 dataKey="id" [rows]="10"
+                    [rowsPerPageOptions]="[10, 25, 50]" 
+                    [globalFilterFields]="['first_name', 'last_name', 'email']">
+
+                    <ng-template #caption>
+                        <div class="flex">
+                            <p-iconfield iconPosition="left" class="ml-auto">
+                                <p-inputicon>
+                                    <i class="pi pi-search"></i>
+                                </p-inputicon>
+                                <input pInputText type="text"
+                                    (input)="dt2.filterGlobal($event.target.value, 'contains')"
+                                    placeholder="Search keyword" />
+                            </p-iconfield>
+                        </div>
+                    </ng-template>
+
+
+                    <ng-template #header>
+                        <tr>
+                            <th>Avatar</th>
+                            <th>Full Name</th>
+                            <th>Email</th>
+                            <th>Action</th>
+                        </tr>
+                    </ng-template>
+                    <ng-template #body let-user>
+                        <tr>
+
+                            <td>
+                                <img [src]="user.avatar" [alt]="user.first_name" class="w-24 rounded" />
+                            </td>
+                            <td>{{ user.first_name }} {{ user.last_name }}</td>
+                            <td>{{ user.email }}</td>
+
+                            <td>
+                                <span [routerLink]="['/details/', user.id]"
+                                    class="cursor-pointer px-2 py-2 bg-blue-500 text-white rounded-lg">View</span>
+
+                                <span (click)="showEditDialog(user)"
+                                    class="cursor-pointer px-2 py-2 bg-green-500 text-white rounded-lg ms-5">Edit</span>
+                            </td>
+
+                        </tr>
+                    </ng-template>
+                </p-table>
+                }
+                @placeholder{
+                <p-progress-spinner ariaLabel="loading" />
+                }
+                @loading {
+                <p-progress-spinner ariaLabel="loading" />
+                }
+
+                @if(!loading() && !error() && pagination().total > 0) {
+                <p-paginator [first]="(pagination().page - 1) * pagination().per_page" [rows]="pagination().per_page"
+                    [totalRecords]="pagination().total" (onPageChange)="onPageChange($event)"></p-paginator>
+                }
+
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- edit user -->
+<div class="card flex justify-center">
+
+    <p-dialog header="Edit User Information" [modal]="true" [(visible)]="visible" [style]="{ width: '25rem' }">
+        <span class="p-text-secondary block mb-8">Update information.</span>
+
+        <form class="col-start-6 col-span-3 px-2 pb-2" [formGroup]="formEditUser" (ngSubmit)="onSubmitEditUser()">
+
+            <div class="flex items-center gap-4 mb-4">
+                <label for="username" class="font-semibold w-24">First Name</label>
+                <input pInputText id="first_name" class="flex-auto" formControlName="first_name"
+                    [(ngModel)]="first_name" autocomplete="off" />
+            </div>
+            <div class="flex items-center gap-4 mb-4">
+                <label for="username" class="font-semibold w-24">Last Name</label>
+                <input pInputText id="last_name" class="flex-auto" formControlName="last_name" [(ngModel)]="last_name"
+                    autocomplete="off" />
+            </div>
+            <div class="flex items-center gap-4 mb-8">
+                <label for="email" class="font-semibold w-24">Email</label>
+                <input pInputText id="email" class="flex-auto" formControlName="email" [(ngModel)]="email"
+                    autocomplete="off" />
+            </div>
+            <div class="flex justify-end gap-2">
+                <p-button label="Cancel" severity="secondary" (click)="visible = false" />
+                <p-button type="submit" label="Save" />
+            </div>
+
+        </form>
+    </p-dialog>
+</div>
+
+<!-- Create a new user in Dialog -->
+<div class="card flex justify-center">
+
+    <p-dialog header="Create New User" [modal]="true" [(visible)]="show" [style]="{ width: '25rem' }">
+        <span class="p-text-secondary block mb-8">New information.</span>
+
+        <form class="col-start-6 col-span-3 px-2 pb-2" [formGroup]="formNewUser" (ngSubmit)="onSubmitNewUser()">
+
+            <div class="flex items-center gap-4 mb-4 grid grid-col-1">
+                <label for="username" class="font-semibold w-24">First Name</label>
+                <input pInputText id="first_name" class="flex-auto" formControlName="first_name" autocomplete="off"
+                    required placeholder="Enter first name" />
+
+                @if(formNewUserControls['first_name'].touched && formNewUserControls['first_name'].invalid) {
+                <p class="mt-2 text-red-500 ">First name is required.</p>
+                }
+                @if(formNewUserControls['first_name'].errors && formNewUserControls['first_name'].errors['minlength']) {
+                <p class="mt-2 text-red-500 ">First Name should be 3 character..</p>
+                }
+
+
+            </div>
+            <div class="flex items-center gap-4 mb-4 grid grid-col-1">
+                <label for="username" class="font-semibold w-24">Last Name</label>
+                <input pInputText id="last_name" class="flex-auto" formControlName="last_name" autocomplete="off"
+                    required placeholder="Enter last name" />
+
+                @if(formNewUserControls['last_name'].touched && formNewUserControls['last_name'].invalid) {
+                <p class="mt-2 text-red-500 ">Last name is required.</p>
+                }
+                @if(formNewUserControls['last_name'].errors && formNewUserControls['last_name'].errors['minlength']) {
+                <p class="mt-2 text-red-500 ">Last Name should be 3 character..</p>
+                }
+
+            </div>
+            <div class="flex items-center gap-4 mb-8 grid grid-col-1">
+                <label for="email" class="font-semibold w-24">Email</label>
+                <input pInputText id="email" class="flex-auto" formControlName="email" autocomplete="off" required
+                    placeholder="Enter email" />
+
+                @if(formNewUserControls['email'].touched && formNewUserControls['email'].invalid) {
+                <p class="mt-2 text-red-500 ">Email is required.</p>
+                }
+
+
+            </div>
+            <div class="flex justify-end gap-2">
+                <p-button label="Cancel" severity="secondary" (click)="show = false" />
+                <p-button type="submit" label="Save" />
+            </div>
+
+        </form>
+    </p-dialog>
+</div>
+
+<!-- Toast-UI -->
+<p-toast position="bottom-right" />
